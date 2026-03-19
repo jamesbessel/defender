@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEFENDER</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="hud">
+            <div id="title">DEFENDER</div>
+            <div id="stats">
+                <span>SCORE: <span id="score">0</span></span>
+                <span>LEVEL: <span id="level">1</span></span>
+                <span>LIVES: <span id="lives">3</span></span>
+                <span>ENEMIES: <span id="enemies">0</span></span>
+            </div>
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        <div id="radar">
+            <canvas id="radarCanvas" width="1000" height="60"></canvas>
+        </div>
+        <div id="message" class="hidden">
+            <h1 id="message-title">DEFENDER</h1>
+            <p id="message-text">Press SPACE to start</p>
+            <p id="message-controls">Arrow Keys = Move | SPACE = Fire | SHIFT = Smart Bomb</p>
+        </div>
+    </div>
+    <script src="/static/js/game.js"></script>
+</body>
+</html>

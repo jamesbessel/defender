@@ -1,0 +1,9 @@
+[project]
+name = "defender"
+version = "0.1.0"
+description = "Classic Defender arcade game clone"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.135.1",
+    "uvicorn[standard]>=0.41.0",
+]
