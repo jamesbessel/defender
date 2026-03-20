@@ -4,12 +4,17 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
 body {
     background: #000;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
     font-family: 'Courier New', monospace;
     color: #00ff00;
     overflow: hidden;
@@ -17,6 +22,9 @@ body {
 
 #game-container {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 #hud {
@@ -103,4 +111,210 @@ body {
 
 .hidden {
     display: none !important;
+}
+
+#touch-controls {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+#controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    pointer-events: auto;
+}
+
+.touch-btn {
+    background: rgba(0, 255, 0, 0.2);
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.touch-btn:active,
+.touch-btn.active {
+    background: rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 20px #00ff00;
+}
+
+.touch-btn svg {
+    width: 36px;
+    height: 36px;
+}
+
+.touch-btn.control {
+    width: 175px;
+    height: 175px;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(0, 255, 0, 0.2);
+    border-color: #00ff00;
+    color: #00ff00;
+    border-radius: 50%;
+}
+
+.touch-btn.control:active,
+.touch-btn.control.active {
+    background: rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 25px #00ff00;
+}
+
+.touch-btn.fire {
+    width: 175px;
+    height: 175px;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(255, 0, 0, 0.3);
+    border-color: #ff0000;
+    color: #ff0000;
+    border-radius: 50%;
+}
+
+.touch-btn.fire:active,
+.touch-btn.fire.active {
+    background: rgba(255, 0, 0, 0.6);
+    box-shadow: 0 0 20px #ff0000;
+}
+
+.touch-btn.bomb {
+    width: 80px;
+    height: 80px;
+    font-size: 14px;
+    font-weight: bold;
+    background: rgba(255, 255, 0, 0.2);
+    border-color: #ffff00;
+    color: #ffff00;
+    border-radius: 50%;
+}
+
+.touch-btn.bomb:active,
+.touch-btn.bomb.active {
+    background: rgba(255, 255, 0, 0.5);
+    box-shadow: 0 0 20px #ffff00;
+}
+
+@media (max-width: 768px) {
+    #title {
+        font-size: 28px;
+        letter-spacing: 8px;
+    }
+
+    #stats {
+        gap: 15px;
+        font-size: 14px;
+    }
+
+    #message-title {
+        font-size: 36px;
+    }
+
+    #message-text {
+        font-size: 18px;
+    }
+
+    #message-controls {
+        font-size: 12px;
+    }
+
+    .touch-btn {
+        width: 65px;
+        height: 65px;
+    }
+
+    .touch-btn svg {
+        width: 30px;
+        height: 30px;
+    }
+
+    .touch-btn.control {
+        width: 138px;
+        height: 138px;
+        font-size: 14px;
+    }
+
+    .touch-btn.fire {
+        width: 138px;
+        height: 138px;
+        font-size: 14px;
+    }
+
+    .touch-btn.bomb {
+        width: 65px;
+        height: 65px;
+        font-size: 12px;
+    }
+
+    #controls-row {
+        gap: 15px;
+    }
+
+    #touch-controls {
+        bottom: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    #title {
+        font-size: 22px;
+        letter-spacing: 5px;
+    }
+
+    #stats {
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 12px;
+    }
+
+    .touch-btn {
+        width: 55px;
+        height: 55px;
+    }
+
+    .touch-btn svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    .touch-btn.control {
+        width: 113px;
+        height: 113px;
+        font-size: 12px;
+    }
+
+    .touch-btn.fire {
+        width: 113px;
+        height: 113px;
+        font-size: 12px;
+    }
+
+    .touch-btn.bomb {
+        width: 55px;
+        height: 55px;
+        font-size: 10px;
+    }
+
+    #controls-row {
+        gap: 10px;
+    }
+
+    #touch-controls {
+        bottom: 15px;
+    }
 }

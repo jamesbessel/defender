@@ -10,7 +10,7 @@ const WORLD_WIDTH = 10000;
 const PLAYER_ACCELERATION = 0.4;  // Thrust power
 const PLAYER_MAX_SPEED = 8;         // Max velocity
 const PLAYER_DRAG = 0.98;          // Slight drag (1 = no drag)
-const PLAYER_VERTICAL_LIMIT = 4;    // Max vertical speed
+const PLAYER_VERTICAL_LIMIT = 2.2;    // Max vertical speed (40% slower)
 const BULLET_SPEED = 15;
 const ENEMY_SPEED = 3;
 
@@ -55,6 +55,10 @@ class Player {
         this.thrusting = false;
         this.invincible = false;
         this.invincibleTime = 0;
+        this.doubleFire = false;
+        this.doubleFireEndTime = 0;
+        this.shielded = false;
+        this.shieldEndTime = 0;
     }
 
     draw() {
@@ -63,6 +67,18 @@ class Player {
         
         if (this.direction === -1) {
             ctx.scale(-1, 1);
+        }
+        
+        // Shield effect
+        if (this.shielded) {
+            ctx.strokeStyle = '#9932cc';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#9932cc';
+            ctx.shadowBlur = 15 + Math.sin(Date.now() / 100) * 5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 30, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
         }
         
         // Ship body
@@ -168,6 +184,17 @@ class Player {
         };
         game.bullets.push(bullet);
         playSound('shoot');
+        
+        if (this.doubleFire) {
+            const bullet2 = {
+                x: this.x + (this.direction === 1 ? 20 : -20),
+                y: this.y + (this.direction === 1 ? 5 : -5),
+                vx: BULLET_SPEED * this.direction,
+                vy: this.direction === 1 ? 1 : -1,
+                player: true
+            };
+            game.bullets.push(bullet2);
+        }
     }
 }
 
@@ -193,6 +220,8 @@ class Enemy {
             case 'baiter': return 2;
             case 'pulsar': return 2;
             case 'mutant': return 3;
+            case 'spikeball': return 1;
+            case 'shield': return 1;
             default: return 1;
         }
     }
@@ -237,6 +266,12 @@ class Enemy {
             case 'mutant':
                 this.drawMutant();
                 break;
+            case 'spikeball':
+                this.drawSpikeball();
+                break;
+            case 'shield':
+                this.drawShield();
+                break;
         }
         
         ctx.restore();
@@ -250,6 +285,8 @@ class Enemy {
             case 'baiter': return '#00ffff';
             case 'pulsar': return '#ff0066';
             case 'mutant': return '#ff0000';
+            case 'spikeball': return '#ff6600';
+            case 'shield': return '#9932cc';
             default: return '#ffffff';
         }
     }
@@ -315,6 +352,41 @@ class Enemy {
         ctx.fillRect(8, -4, 4, 4);
     }
 
+    drawSpikeball() {
+        ctx.save();
+        ctx.rotate(this.angle * 2);
+        const spikes = 8;
+        const outerRadius = 18;
+        const innerRadius = 10;
+        ctx.beginPath();
+        for (let i = 0; i < spikes * 2; i++) {
+            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const angle = (Math.PI * 2 / (spikes * 2)) * i;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    drawShield() {
+        ctx.save();
+        ctx.translate(0, Math.sin(Date.now() / 300) * 5);
+        ctx.font = '28px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#9932cc';
+        ctx.shadowBlur = 10;
+        ctx.fillText('🛡️', 0, 0);
+        ctx.restore();
+    }
+
     update() {
         // Basic AI movement
         if (this.type === 'baiter') {
@@ -336,6 +408,10 @@ class Enemy {
                 this.x += (dx / dist) * this.speed;
                 this.y += (dy / dist) * this.speed;
             }
+        } else if (this.type === 'shield') {
+            // Shields meander slowly
+            this.x += Math.sin(Date.now() / 1000 + this.x) * 0.5;
+            this.y += Math.cos(Date.now() / 800 + this.y) * 0.5;
         } else {
             // Other enemies oscillate
             this.y += Math.sin(Date.now() / 500 + this.x) * 1;
@@ -357,6 +433,8 @@ class Enemy {
             case 'baiter': return 250;
             case 'pulsar': return 300;
             case 'mutant': return 500;
+            case 'spikeball': return 300;
+            case 'shield': return 200;
             default: return 100;
         }
     }
@@ -382,13 +460,30 @@ function spawnEnemies() {
     
     for (let i = 0; i < numEnemies; i++) {
         let x = Math.random() * WORLD_WIDTH;
-        // Don't spawn too close to player
         while (Math.abs(x - game.player.x) < 500) {
             x = Math.random() * WORLD_WIDTH;
         }
         const y = 100 + Math.random() * (canvas.height - 200);
         const type = types[Math.floor(Math.random() * types.length)];
         game.enemies.push(new Enemy(x, y, type));
+    }
+    
+    for (let i = 0; i < 3; i++) {
+        let x = Math.random() * WORLD_WIDTH;
+        while (Math.abs(x - game.player.x) < 500) {
+            x = Math.random() * WORLD_WIDTH;
+        }
+        const y = 100 + Math.random() * (canvas.height - 200);
+        game.enemies.push(new Enemy(x, y, 'spikeball'));
+    }
+    
+    for (let i = 0; i < 2; i++) {
+        let x = Math.random() * WORLD_WIDTH;
+        while (Math.abs(x - game.player.x) < 500) {
+            x = Math.random() * WORLD_WIDTH;
+        }
+        const y = 100 + Math.random() * (canvas.height - 200);
+        game.enemies.push(new Enemy(x, y, 'shield'));
     }
 }
 
@@ -475,6 +570,27 @@ function playSound(type) {
             osc.start(now);
             osc.stop(now + 0.5);
             break;
+        case 'powerup':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.setValueAtTime(600, now + 0.1);
+            osc.frequency.setValueAtTime(800, now + 0.2);
+            osc.frequency.setValueAtTime(1200, now + 0.3);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
+            break;
+        case 'shield':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.setValueAtTime(500, now + 0.15);
+            osc.frequency.setValueAtTime(700, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now);
+            osc.stop(now + 0.5);
+            break;
     }
 }
 
@@ -524,9 +640,10 @@ function drawBullets() {
         // Only draw if on screen
         if (screenX < -20 || screenX > canvas.width + 20) return;
         
-        // Bullet glow
-        ctx.fillStyle = '#00ff00';
-        ctx.shadowColor = '#00ff00';
+        // Bullet glow - pink when double fire is active
+        const bulletColor = game.player.doubleFire ? '#ff6600' : '#00ff00';
+        ctx.fillStyle = bulletColor;
+        ctx.shadowColor = bulletColor;
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(screenX, bullet.y, 4, 0, Math.PI * 2);
@@ -541,10 +658,17 @@ function drawRadar() {
     radarCtx.fillRect(0, 0, radarCanvas.width, radarCanvas.height);
     
     // Draw enemies on radar
-    radarCtx.fillStyle = '#ff0000';
     game.enemies.forEach(enemy => {
         if (!enemy.alive) return;
         const radarX = (enemy.x / WORLD_WIDTH) * radarCanvas.width;
+        
+        if (enemy.type === 'spikeball') {
+            radarCtx.fillStyle = '#ff6600';
+        } else if (enemy.type === 'shield') {
+            radarCtx.fillStyle = '#9932cc';
+        } else {
+            radarCtx.fillStyle = '#ff0000';
+        }
         radarCtx.fillRect(radarX - 2, enemy.y / canvas.height * 60 - 2, 4, 4);
     });
     
@@ -588,6 +712,28 @@ function drawParticles() {
     });
 }
 
+function activateDoubleFire() {
+    const POWERUP_DURATION = 10000;
+    if (game.player.doubleFire) {
+        game.player.doubleFireEndTime += POWERUP_DURATION;
+    } else {
+        game.player.doubleFire = true;
+        game.player.doubleFireEndTime = Date.now() + POWERUP_DURATION;
+    }
+    playSound('powerup');
+}
+
+function activateShield() {
+    const SHIELD_DURATION = 10000;
+    if (game.player.shielded) {
+        game.player.shieldEndTime += SHIELD_DURATION;
+    } else {
+        game.player.shielded = true;
+        game.player.shieldEndTime = Date.now() + SHIELD_DURATION;
+    }
+    playSound('shield');
+}
+
 // Collision detection
 function checkCollisions() {
     // Bullets hitting enemies
@@ -603,7 +749,17 @@ function checkCollisions() {
             
             // Increased hit radius from 20 to 35
             if (dist < 35) {
-                if (enemy.hit()) {
+                if (enemy.type === 'spikeball') {
+                    activateDoubleFire();
+                    enemy.alive = false;
+                    createExplosion(enemy.x, enemy.y, enemy.getColor());
+                    updateHUD();
+                } else if (enemy.type === 'shield') {
+                    activateShield();
+                    enemy.alive = false;
+                    createExplosion(enemy.x, enemy.y, enemy.getColor());
+                    updateHUD();
+                } else if (enemy.hit()) {
                     game.score += enemy.getPoints();
                     createExplosion(enemy.x, enemy.y, enemy.getColor());
                     playSound('explosion');
@@ -617,7 +773,7 @@ function checkCollisions() {
     });
     
     // Enemies hitting player
-    if (!game.player.invincible) {
+    if (!game.player.invincible && !game.player.shielded) {
         for (let enemy of game.enemies) {
             if (!enemy.alive) continue;
             
@@ -700,6 +856,14 @@ function hideMessage() {
 // Main game loop
 function gameLoop() {
     if (game.state !== 'playing') return;
+    
+    if (game.player.doubleFire && Date.now() > game.player.doubleFireEndTime) {
+        game.player.doubleFire = false;
+    }
+    
+    if (game.player.shielded && Date.now() > game.player.shieldEndTime) {
+        game.player.shielded = false;
+    }
     
     // Clear
     ctx.fillStyle = '#000011';
@@ -789,3 +953,262 @@ document.addEventListener('keyup', (e) => {
 // Initialize
 initGame();
 updateHUD();
+
+// ── Mobile Touch Support ───────────────────────────────────────────────────
+
+const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+function setupMobileControls() {
+    if (!isMobile) return;
+
+    const touchControls = document.getElementById('touch-controls');
+    const mobileControlsHint = document.getElementById('mobile-controls');
+    const messageControls = document.getElementById('message-controls');
+
+    touchControls.classList.remove('hidden');
+    mobileControlsHint.classList.remove('hidden');
+    messageControls.classList.add('hidden');
+
+    resizeCanvas();
+
+    const btnFire = document.getElementById('btn-fire');
+    const btnControl = document.getElementById('btn-control');
+
+    // FIRE BUTTON - Simple fire only
+    let fireInterval = null;
+    const FIRE_RATE = 150;
+
+    function handleFire() {
+        initAudio();
+        if (game.state === 'start' || game.state === 'gameover') {
+            startGame();
+        } else if (game.state === 'playing') {
+            game.player.shoot();
+        }
+    }
+
+    function startFiring() {
+        handleFire();
+        fireInterval = setInterval(() => {
+            if (game.state === 'playing') {
+                game.player.shoot();
+            }
+        }, FIRE_RATE);
+    }
+
+    function stopFiring() {
+        if (fireInterval) {
+            clearInterval(fireInterval);
+            fireInterval = null;
+        }
+    }
+
+    btnFire.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        btnFire.classList.add('active');
+        startFiring();
+    }, { passive: false });
+    btnFire.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        btnFire.classList.remove('active');
+        stopFiring();
+    }, { passive: false });
+    btnFire.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        btnFire.classList.remove('active');
+        stopFiring();
+    }, { passive: false });
+
+    btnFire.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        btnFire.classList.add('active');
+        startFiring();
+    });
+    btnFire.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        btnFire.classList.remove('active');
+        stopFiring();
+    });
+    btnFire.addEventListener('mouseleave', (e) => {
+        btnFire.classList.remove('active');
+        stopFiring();
+    });
+
+    // CONTROL BUTTON - Thrust + direction control
+    let controlInterval = null;
+    let controlTouchStartX = null;
+    let controlTouchStartY = null;
+    let isControlActive = false;
+    const CONTROL_RATE = 50;
+    const DIRECTION_THRESHOLD = 2.6;
+
+    function startControl() {
+        game.keys['ArrowUp'] = true;
+        controlInterval = setInterval(() => {
+            game.keys['ArrowUp'] = true;
+        }, CONTROL_RATE);
+    }
+
+    function stopControl() {
+        game.keys['ArrowUp'] = false;
+        game.keys['ArrowDown'] = false;
+        game.keys['ArrowLeft'] = false;
+        game.keys['ArrowRight'] = false;
+        if (controlInterval) {
+            clearInterval(controlInterval);
+            controlInterval = null;
+        }
+        controlTouchStartX = null;
+        controlTouchStartY = null;
+        isControlActive = false;
+    }
+
+    function handleControlTouchStart(e) {
+        e.preventDefault();
+        btnControl.classList.add('active');
+        initAudio();
+        const touch = e.touches[0];
+        controlTouchStartX = touch.clientX;
+        controlTouchStartY = touch.clientY;
+        isControlActive = true;
+        startControl();
+    }
+
+    function handleControlTouchMove(e) {
+        if (!isControlActive || controlTouchStartX === null) return;
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - controlTouchStartX;
+        const deltaY = controlTouchStartY - touch.clientY;
+
+        game.keys['ArrowUp'] = deltaY > DIRECTION_THRESHOLD;
+        game.keys['ArrowDown'] = deltaY < -DIRECTION_THRESHOLD;
+        game.keys['ArrowLeft'] = deltaX < -DIRECTION_THRESHOLD;
+        game.keys['ArrowRight'] = deltaX > DIRECTION_THRESHOLD;
+
+        if (game.player) {
+            if (deltaX < -DIRECTION_THRESHOLD) {
+                game.player.direction = -1;
+            } else if (deltaX > DIRECTION_THRESHOLD) {
+                game.player.direction = 1;
+            }
+        }
+    }
+
+    function handleControlTouchEnd(e) {
+        e.preventDefault();
+        btnControl.classList.remove('active');
+        stopControl();
+    }
+
+    btnControl.addEventListener('touchstart', handleControlTouchStart, { passive: false });
+    btnControl.addEventListener('touchmove', handleControlTouchMove, { passive: false });
+    btnControl.addEventListener('touchend', handleControlTouchEnd, { passive: false });
+    btnControl.addEventListener('touchcancel', handleControlTouchEnd, { passive: false });
+
+    // CONTROL BUTTON - Mouse support for desktop testing
+    btnControl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        btnControl.classList.add('active');
+        initAudio();
+        isControlActive = true;
+        startControl();
+    });
+    btnControl.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        btnControl.classList.remove('active');
+        stopControl();
+    });
+    btnControl.addEventListener('mouseleave', (e) => {
+        btnControl.classList.remove('active');
+        stopControl();
+    });
+
+    // BOMB BUTTON
+    const btnBomb = document.getElementById('btn-bomb');
+
+    function handleBomb() {
+        initAudio();
+        if (game.state === 'playing') {
+            useSmartBomb();
+        }
+    }
+
+    btnBomb.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        btnBomb.classList.add('active');
+        handleBomb();
+    }, { passive: false });
+    btnBomb.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        btnBomb.classList.remove('active');
+    }, { passive: false });
+    btnBomb.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        btnBomb.classList.remove('active');
+    }, { passive: false });
+
+    btnBomb.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        btnBomb.classList.add('active');
+        handleBomb();
+    });
+    btnBomb.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        btnBomb.classList.remove('active');
+    });
+    btnBomb.addEventListener('mouseleave', (e) => {
+        btnBomb.classList.remove('active');
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (game.state === 'playing') {
+            e.preventDefault();
+        }
+    }, { passive: false });
+}
+
+function resizeCanvas() {
+    const aspectRatio = 1000 / 600;
+    
+    let maxWidth, maxHeight;
+    
+    if (isMobile) {
+        maxWidth = window.innerWidth - 20;
+        maxHeight = window.innerHeight - 250;
+    } else {
+        maxWidth = Math.min(window.innerWidth - 40, 1000);
+        maxHeight = Math.min(window.innerHeight - 150, 600);
+    }
+    
+    let width = maxWidth;
+    let height = width / aspectRatio;
+    
+    if (height > maxHeight) {
+        height = maxHeight;
+        width = height * aspectRatio;
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    radarCanvas.width = width;
+    radarCanvas.height = 50;
+    
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    radarCanvas.style.width = width + 'px';
+    radarCanvas.style.height = '50px';
+}
+
+function initDisplay() {
+    resizeCanvas();
+    
+    window.addEventListener('resize', resizeCanvas);
+    if (isMobile) {
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 100);
+        });
+    }
+}
+
+setupMobileControls();
+initDisplay();

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DEFENDER</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
@@ -16,14 +16,23 @@
                 <span>LIVES: <span id="lives">3</span></span>
                 <span>ENEMIES: <span id="enemies">0</span></span>
             </div>
-        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        </div>
+        <canvas id="gameCanvas"></canvas>
         <div id="radar">
-            <canvas id="radarCanvas" width="1000" height="60"></canvas>
+            <canvas id="radarCanvas"></canvas>
+        </div>
+        <div id="touch-controls" class="hidden">
+            <div id="controls-row">
+                <button id="btn-fire" class="touch-btn fire">FIRE</button>
+                <button id="btn-bomb" class="touch-btn bomb">BOMB</button>
+                <button id="btn-control" class="touch-btn control">CONTROL</button>
+            </div>
         </div>
         <div id="message" class="hidden">
             <h1 id="message-title">DEFENDER</h1>
             <p id="message-text">Press SPACE to start</p>
             <p id="message-controls">Arrow Keys = Move | SPACE = Fire | SHIFT = Smart Bomb</p>
+            <p id="mobile-controls" class="hidden">Tap FIRE to start</p>
         </div>
     </div>
     <script src="/static/js/game.js"></script>
