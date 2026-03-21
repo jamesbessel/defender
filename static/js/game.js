@@ -956,7 +956,7 @@ updateHUD();
 
 // ── Mobile Touch Support ───────────────────────────────────────────────────
 
-const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 768);
 
 function setupMobileControls() {
     if (!isMobile) return;
@@ -1210,5 +1210,12 @@ function initDisplay() {
     }
 }
 
-setupMobileControls();
-initDisplay();
+document.addEventListener('DOMContentLoaded', () => {
+    setupMobileControls();
+    resizeCanvas();
+});
+
+window.addEventListener('load', () => {
+    resizeCanvas();
+    if (isMobile) setupMobileControls();
+});
